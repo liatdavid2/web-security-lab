@@ -1,0 +1,24 @@
+services:
+  red-team:
+    build: ./red_team
+    container_name: red-team
+    environment:
+      BLUE_TEAM_URL: http://blue-team:8202
+    ports:
+      - "8201:8201"
+    depends_on:
+      - blue-team
+
+  blue-team:
+    build: ./blue_team
+    container_name: blue-team
+    environment:
+      RED_TEAM_URL: http://red-team:8201
+      DB_PATH: /data/blue_team.db
+    ports:
+      - "8202:8202"
+    volumes:
+      - blue_data:/data
+
+volumes:
+  blue_data:

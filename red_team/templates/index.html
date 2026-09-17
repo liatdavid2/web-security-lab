@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Red Team | web-security-lab</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="shell">
+  <aside>
+    <div class="brand">web-security-lab</div>
+    <div class="team-mark red">RED TEAM</div>
+    <p>Offensive validation</p>
+    <nav>
+      <a class="active" href="/">Attack Console</a>
+      <a href="http://localhost:8202">Blue Team Dashboard</a>
+    </nav>
+    <div class="safe-note">Local controlled lab<br>No production targets</div>
+  </aside>
+
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">OFFENSIVE SECURITY</div>
+        <h1>Attack Console</h1>
+        <p>Run controlled scenarios and send evidence to the Blue Team.</p>
+      </div>
+      <button id="runAll" class="primary">Run all attacks</button>
+    </header>
+
+    <section class="summary">
+      <div class="metric"><span>Scenarios</span><strong>5</strong></div>
+      <div class="metric"><span>Target</span><strong>Local Lab</strong></div>
+      <div class="metric"><span>Telemetry</span><strong>Blue Team</strong></div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <div><h2>Attack scenarios</h2><p>Select a scenario and execution mode.</p></div>
+      </div>
+
+      <div class="scenario-grid">
+        {% for key, s in scenarios.items() %}
+        <article class="scenario-card" data-key="{{ key }}">
+          <div class="card-top">
+            <span class="severity {{ s.severity|lower }}">{{ s.severity }}</span>
+            <span class="method">{{ s.method }}</span>
+          </div>
+          <h3>{{ s.name }}</h3>
+          <p>{{ s.description }}</p>
+          <div class="meta">
+            <span>Endpoint</span><code>{{ s.endpoint }}</code>
+            <span>Expected defense</span><b>{{ s.expected_control }}</b>
+          </div>
+          <div class="buttons">
+            <button class="attack" onclick="runScenario('{{ key }}','vulnerable',this)">Attack vulnerable</button>
+            <button class="retest" onclick="runScenario('{{ key }}','protected',this)">Re-test protected</button>
+          </div>
+          <div class="result" id="result-{{ key }}">Not run yet</div>
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+async function runScenario(scenario, mode, btn) {
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Running...';
+  const box = document.getElementById('result-' + scenario);
+  try {
+    const r = await fetch('/run', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({scenario, mode})
+    });
+    const data = await r.json();
+    const red = data.red_team, blue = data.blue_team;
+    box.className = 'result ' + (red.attack_success ? 'bad' : 'good');
+    box.innerHTML = `
+      <b>${red.attack_success ? 'Attack succeeded' : 'Attack stopped'}</b>
+      <span>HTTP ${red.target_status} · Detected: ${blue.detected ? 'Yes' : 'No'} · Blocked: ${blue.blocked ? 'Yes' : 'No'}</span>
+    `;
+  } catch(e) {
+    box.className='result bad';
+    box.textContent='Run failed: ' + e;
+  } finally {
+    btn.disabled=false; btn.textContent=old;
+  }
+}
+
+document.getElementById('runAll').onclick = async function() {
+  const btn=this; btn.disabled=true; btn.textContent='Running...';
+  try {
+    await fetch('/run-all?mode=vulnerable',{method:'POST'});
+    for (const key of ['idor','xss','sqli','bruteforce','upload']) {
+      document.getElementById('result-'+key).innerHTML='<b>Attack executed</b><span>Open Blue Team dashboard for detection results.</span>';
+      document.getElementById('result-'+key).className='result bad';
+    }
+  } finally { btn.disabled=false; btn.textContent='Run all attacks'; }
+};
+</script>
+</body>
+</html>
