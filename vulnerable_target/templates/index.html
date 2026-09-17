@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vulnerable Training Target</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main>
+    <div class="badge">LOCAL TRAINING TARGET</div>
+    <h1>Vulnerable Web App</h1>
+    <p class="lead">Intentionally insecure service for the Red/Blue Team lab. Run only inside this local Docker Compose environment.</p>
+    <div class="warning">⚠️ Deliberately vulnerable. Do not expose port 8203 to the public Internet.</div>
+    <section class="grid">
+      <article><h2>IDOR</h2><p>Object lookup without ownership validation.</p><code>GET /vuln/notes/{id}?user=alice</code></article>
+      <article><h2>Reflected XSS</h2><p>Unescaped search text rendered into HTML.</p><code>GET /vuln/search?q=...</code></article>
+      <article><h2>SQL Injection</h2><p>Local SQLite login built with string interpolation.</p><code>POST /vuln/login</code></article>
+      <article><h2>Brute Force</h2><p>Authentication endpoint with no rate limit.</p><code>POST /vuln/auth-check</code></article>
+      <article><h2>Unsafe Upload</h2><p>Accepts upload metadata without validating type or extension.</p><code>POST /vuln/upload</code></article>
+    </section>
+    <section class="protected"><h2>Protected twins</h2><p>Each exercise also has a <code>/protected/...</code> endpoint, allowing the Blue Team assessment to compare vulnerable vs mitigated behavior.</p></section>
+  </main>
+</body>
+</html>

@@ -1,13 +1,25 @@
 services:
+  vulnerable-target:
+    build: ./vulnerable_target
+    container_name: vulnerable-target
+    environment:
+      TARGET_DB_PATH: /data/target.db
+    ports:
+      - "8203:8203"
+    volumes:
+      - target_data:/data
+
   red-team:
     build: ./red_team
     container_name: red-team
     environment:
       BLUE_TEAM_URL: http://blue-team:8202
+      TARGET_URL: http://vulnerable-target:8203
     ports:
       - "8201:8201"
     depends_on:
       - blue-team
+      - vulnerable-target
 
   blue-team:
     build: ./blue_team
@@ -22,3 +34,4 @@ services:
 
 volumes:
   blue_data:
+  target_data:
