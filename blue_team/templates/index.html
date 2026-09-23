@@ -14,20 +14,22 @@
     <p>Detection & response</p>
     <nav>
       <a class="active" href="/">SOC Dashboard</a>
+      <a href="/docs">Blue Swagger</a>
+      <a href="http://localhost:8203/docs">Target Swagger</a>
       <a href="http://localhost:8201">Red Team Console</a>
     </nav>
     <div class="legend">
-      <span><i class="dot red"></i> Attack succeeded</span>
-      <span><i class="dot green"></i> Blocked / protected</span>
+      <span><i class="dot red"></i> Weakness reproduced</span>
+      <span><i class="dot green"></i> Protected / mitigated</span>
     </div>
   </aside>
 
   <main>
     <header>
       <div>
-        <div class="eyebrow">DEFENSIVE SECURITY</div>
+        <div class="eyebrow">DEFENSIVE SECURITY · OWASP TOP 10:2025</div>
         <h1>SOC Dashboard</h1>
-        <p>Detection, blocking and before/after security validation.</p>
+        <p>Detection, mitigation and before/after security validation.</p>
       </div>
       <div class="actions">
         <button id="run">Run full assessment</button>
@@ -37,47 +39,50 @@
 
     <section class="health">
       <div><span class="status-dot"></span><b>Blue Team online</b></div>
-      <span>Receives telemetry from Red Team :8201</span>
+      <span>{{ rules|length }} explainable controls loaded</span>
     </section>
 
     <section class="metrics">
       <div class="card"><span>Total events</span><strong id="total">0</strong></div>
       <div class="card"><span>Detection rate</span><strong id="detect">0%</strong></div>
-      <div class="card"><span>Block rate</span><strong id="block">0%</strong></div>
+      <div class="card"><span>Mitigation-active rate</span><strong id="block">0%</strong></div>
       <div class="card"><span>Mean detection latency</span><strong id="latency">0 ms</strong></div>
     </section>
 
     <section class="before-after">
       <article class="compare before">
-        <div class="label">BEFORE DEFENSE</div>
-        <h2 id="before">0%</h2>
-        <p>Attack success rate</p>
-        <div class="bar"><i id="beforeBar"></i></div>
+        <div class="label">BEFORE DEFENSE</div><h2 id="before">0%</h2><p>Weakness reproduction rate</p><div class="bar"><i id="beforeBar"></i></div>
       </article>
       <div class="shield">→</div>
       <article class="compare after">
-        <div class="label">AFTER DEFENSE</div>
-        <h2 id="after">0%</h2>
-        <p>Attack success rate after mitigation</p>
-        <div class="bar"><i id="afterBar"></i></div>
+        <div class="label">AFTER DEFENSE</div><h2 id="after">0%</h2><p>Weakness reproduction rate after mitigation</p><div class="bar"><i id="afterBar"></i></div>
       </article>
     </section>
 
     <section class="table-card">
       <div class="table-head">
-        <div><h2>Security events</h2><p>Evidence correlated with Blue Team controls.</p></div>
+        <div><h2>Security events</h2><p>Red Team evidence correlated with Blue Team controls.</p></div>
         <span id="eventCount">0 events</span>
       </div>
       <div class="table-wrap">
         <table>
-          <thead>
-          <tr>
-            <th>Scenario</th><th>Mode</th><th>Attack</th><th>Detection</th>
-            <th>Response</th><th>Rule</th><th>Control</th><th>Latency</th>
-          </tr>
-          </thead>
+          <thead><tr><th>Scenario</th><th>Mode</th><th>Attack</th><th>Detection</th><th>Mitigation</th><th>Rule</th><th>Control</th><th>Latency</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
+      </div>
+    </section>
+
+    <section class="controls-section">
+      <div class="table-head"><div><h2>Defense catalog</h2><p>What Blue Team looks for and which control should prevent it.</p></div></div>
+      <div class="control-grid">
+        {% for key, r in rules.items() %}
+        <article class="control-card">
+          <div><span class="owasp">{{ r.owasp }}</span><code>{{ r.rule }}</code></div>
+          <h3>{{ r.control }}</h3>
+          <p><b>Detect:</b> {{ r.detect }}</p>
+          <p><b>Fix:</b> {{ r.remediation }}</p>
+        </article>
+        {% endfor %}
       </div>
     </section>
   </main>
@@ -86,37 +91,27 @@
 <script>
 const $=id=>document.getElementById(id);
 const badge=(ok,yes='Yes',no='No')=>`<span class="badge ${ok?'good':'bad'}">${ok?yes:no}</span>`;
-
 async function refresh(){
   const s=await fetch('/api/summary').then(r=>r.json());
-  $('total').textContent=s.total;
-  $('detect').textContent=s.detection_rate+'%';
-  $('block').textContent=s.block_rate+'%';
-  $('latency').textContent=s.mean_detection_latency_ms+' ms';
-  $('before').textContent=s.vulnerable_success_rate+'%';
-  $('after').textContent=s.protected_success_rate+'%';
-  $('beforeBar').style.width=s.vulnerable_success_rate+'%';
-  $('afterBar').style.width=s.protected_success_rate+'%';
-
+  $('total').textContent=s.total; $('detect').textContent=s.detection_rate+'%'; $('block').textContent=s.block_rate+'%';
+  $('latency').textContent=s.mean_detection_latency_ms+' ms'; $('before').textContent=s.vulnerable_success_rate+'%'; $('after').textContent=s.protected_success_rate+'%';
+  $('beforeBar').style.width=s.vulnerable_success_rate+'%'; $('afterBar').style.width=s.protected_success_rate+'%';
   const events=await fetch('/api/events').then(r=>r.json());
   $('eventCount').textContent=events.length+' events';
   $('rows').innerHTML=events.length ? events.map(e=>`
     <tr>
-      <td><b>${e.scenario_name}</b><small>${e.method} ${e.endpoint}</small></td>
+      <td><b>${e.scenario_name}</b><small>${e.owasp} · ${e.method} ${e.endpoint}</small></td>
       <td><span class="mode ${e.mode}">${e.mode}</span></td>
       <td>${badge(!!e.attack_success,'Succeeded','Stopped')}</td>
       <td>${badge(!!e.detected,'Detected','Missed')}</td>
-      <td>${badge(!!e.blocked,'Blocked','Allowed')}</td>
-      <td><code>${e.rule_id}</code></td>
-      <td>${e.control}</td>
-      <td>${e.detection_latency_ms} ms</td>
-    </tr>`).join('') :
-    `<tr><td colspan="8" class="empty">No events yet. Run the assessment or use the Red Team console.</td></tr>`;
+      <td>${badge(!!e.blocked,'Active','Not active')}</td>
+      <td><code>${e.rule_id}</code></td><td>${e.control}</td><td>${e.detection_latency_ms} ms</td>
+    </tr>`).join('') : `<tr><td colspan="8" class="empty">No events yet. Run the assessment or use the Red Team console.</td></tr>`;
 }
-
 $('run').onclick=async function(){
   this.disabled=true; this.textContent='Running...';
-  try{await fetch('/api/run-assessment',{method:'POST'});await refresh();}
+  try{const r=await fetch('/api/run-assessment',{method:'POST'});if(!r.ok){const d=await r.json();throw new Error(d.detail||r.status)}await refresh();}
+  catch(e){alert('Assessment failed: '+e)}
   finally{this.disabled=false;this.textContent='Run full assessment';}
 };
 $('reset').onclick=async()=>{await fetch('/api/reset',{method:'POST'});await refresh();};

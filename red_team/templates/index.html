@@ -14,30 +14,32 @@
     <p>Offensive validation</p>
     <nav>
       <a class="active" href="/">Attack Console</a>
+      <a href="/docs">Red Swagger</a>
+      <a href="http://localhost:8203/docs">Target Swagger</a>
       <a href="http://localhost:8202">Blue Team Dashboard</a>
     </nav>
-    <div class="safe-note">Local controlled lab<br>No production targets</div>
+    <div class="safe-note">Local controlled lab<br>Fixed, bounded scenarios only</div>
   </aside>
 
   <main>
     <header>
       <div>
-        <div class="eyebrow">OFFENSIVE SECURITY</div>
+        <div class="eyebrow">OFFENSIVE SECURITY · OWASP TOP 10:2025</div>
         <h1>Attack Console</h1>
-        <p>Run controlled scenarios and send evidence to the Blue Team.</p>
+        <p>Run controlled scenarios, see why each weakness matters, then re-test the protected twin.</p>
       </div>
       <button id="runAll" class="primary">Run all attacks</button>
     </header>
 
     <section class="summary">
-      <div class="metric"><span>Scenarios</span><strong>5</strong></div>
+      <div class="metric"><span>Scenarios</span><strong>{{ scenarios|length }}</strong></div>
       <div class="metric"><span>Target</span><strong>Local Lab</strong></div>
-      <div class="metric"><span>Telemetry</span><strong>Blue Team</strong></div>
+      <div class="metric"><span>Framework</span><strong>OWASP 2025</strong></div>
     </section>
 
     <section>
       <div class="section-title">
-        <div><h2>Attack scenarios</h2><p>Select a scenario and execution mode.</p></div>
+        <div><h2>Attack scenarios</h2><p>Every card has a vulnerable endpoint and a protected twin.</p></div>
       </div>
 
       <div class="scenario-grid">
@@ -45,10 +47,16 @@
         <article class="scenario-card" data-key="{{ key }}">
           <div class="card-top">
             <span class="severity {{ s.severity|lower }}">{{ s.severity }}</span>
+            <span class="owasp">{{ s.owasp }}</span>
             <span class="method">{{ s.method }}</span>
           </div>
           <h3>{{ s.name }}</h3>
           <p>{{ s.description }}</p>
+          <details>
+            <summary>Why it happens & how to fix it</summary>
+            <div class="explain"><b>Why:</b> {{ s.why }}</div>
+            <div class="explain"><b>Defense:</b> {{ s.remediation }}</div>
+          </details>
           <div class="meta">
             <span>Endpoint</span><code>{{ s.endpoint }}</code>
             <span>Expected defense</span><b>{{ s.expected_control }}</b>
@@ -72,32 +80,27 @@ async function runScenario(scenario, mode, btn) {
   const box = document.getElementById('result-' + scenario);
   try {
     const r = await fetch('/run', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({scenario, mode})
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario, mode})
     });
     const data = await r.json();
+    if(!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
     const red = data.red_team, blue = data.blue_team;
     box.className = 'result ' + (red.attack_success ? 'bad' : 'good');
     box.innerHTML = `
-      <b>${red.attack_success ? 'Attack succeeded' : 'Attack stopped'}</b>
-      <span>HTTP ${red.target_status} · Detected: ${blue.detected ? 'Yes' : 'No'} · Blocked: ${blue.blocked ? 'Yes' : 'No'}</span>
+      <b>${red.attack_success ? 'Weakness reproduced' : 'Attack stopped'}</b>
+      <span>HTTP ${red.target_status} · Detected: ${blue.detected ? 'Yes' : 'No'} · Mitigation: ${blue.blocked ? 'Active' : 'Not active'}</span>
     `;
   } catch(e) {
-    box.className='result bad';
-    box.textContent='Run failed: ' + e;
-  } finally {
-    btn.disabled=false; btn.textContent=old;
-  }
+    box.className='result bad'; box.textContent='Run failed: ' + e;
+  } finally { btn.disabled=false; btn.textContent=old; }
 }
 
 document.getElementById('runAll').onclick = async function() {
   const btn=this; btn.disabled=true; btn.textContent='Running...';
   try {
-    await fetch('/run-all?mode=vulnerable',{method:'POST'});
-    for (const key of ['idor','xss','sqli','bruteforce','upload']) {
-      document.getElementById('result-'+key).innerHTML='<b>Attack executed</b><span>Open Blue Team dashboard for detection results.</span>';
-      document.getElementById('result-'+key).className='result bad';
+    for (const card of document.querySelectorAll('.scenario-card')) {
+      const attackBtn = card.querySelector('.attack');
+      await runScenario(card.dataset.key, 'vulnerable', attackBtn);
     }
   } finally { btn.disabled=false; btn.textContent='Run all attacks'; }
 };

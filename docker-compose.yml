@@ -5,7 +5,7 @@ services:
     environment:
       TARGET_DB_PATH: /data/target.db
     ports:
-      - "8203:8203"
+      - "127.0.0.1:8203:8203"
     volumes:
       - target_data:/data
 
@@ -16,7 +16,7 @@ services:
       BLUE_TEAM_URL: http://blue-team:8202
       TARGET_URL: http://vulnerable-target:8203
     ports:
-      - "8201:8201"
+      - "127.0.0.1:8201:8201"
     depends_on:
       - blue-team
       - vulnerable-target
@@ -28,7 +28,7 @@ services:
       RED_TEAM_URL: http://red-team:8201
       DB_PATH: /data/blue_team.db
     ports:
-      - "8202:8202"
+      - "127.0.0.1:8202:8202"
     volumes:
       - blue_data:/data
 

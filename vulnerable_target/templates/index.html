@@ -8,18 +8,28 @@
 </head>
 <body>
   <main>
-    <div class="badge">LOCAL TRAINING TARGET</div>
+    <div class="badge">LOCAL TRAINING TARGET · OWASP TOP 10:2025</div>
     <h1>Vulnerable Web App</h1>
-    <p class="lead">Intentionally insecure service for the Red/Blue Team lab. Run only inside this local Docker Compose environment.</p>
-    <div class="warning">⚠️ Deliberately vulnerable. Do not expose port 8203 to the public Internet.</div>
+    <p class="lead">A deliberately insecure service with paired vulnerable/protected endpoints. Use Swagger to read the explanation, send a request, and compare the mitigation.</p>
+    <div class="actions">
+      <a class="primary" href="/docs">Open Swagger UI</a>
+      <a href="http://localhost:8201">Red Team</a>
+      <a href="http://localhost:8202">Blue Team</a>
+    </div>
+    <div class="warning">⚠️ Local lab only. Port 8203 must not be exposed to the public Internet.</div>
     <section class="grid">
-      <article><h2>IDOR</h2><p>Object lookup without ownership validation.</p><code>GET /vuln/notes/{id}?user=alice</code></article>
-      <article><h2>Reflected XSS</h2><p>Unescaped search text rendered into HTML.</p><code>GET /vuln/search?q=...</code></article>
-      <article><h2>SQL Injection</h2><p>Local SQLite login built with string interpolation.</p><code>POST /vuln/login</code></article>
-      <article><h2>Brute Force</h2><p>Authentication endpoint with no rate limit.</p><code>POST /vuln/auth-check</code></article>
-      <article><h2>Unsafe Upload</h2><p>Accepts upload metadata without validating type or extension.</p><code>POST /vuln/upload</code></article>
+      <article><h2>A01 · Access Control</h2><p>IDOR, simulated path traversal and training-safe SSRF.</p><code>/vuln/notes · /vuln/files · /vuln/fetch-url</code></article>
+      <article><h2>A02 · Misconfiguration</h2><p>Debug/config information disclosure.</p><code>GET /vuln/debug-config</code></article>
+      <article><h2>A03 · Supply Chain</h2><p>Unpinned dependencies and missing integrity metadata.</p><code>GET /vuln/dependencies</code></article>
+      <article><h2>A04 · Cryptography</h2><p>Cleartext credential exposure.</p><code>GET /vuln/credentials/{username}</code></article>
+      <article><h2>A05 · Injection</h2><p>Reflected XSS and SQL injection.</p><code>/vuln/search · /vuln/login</code></article>
+      <article><h2>A06 · Insecure Design</h2><p>Predictable password-reset token.</p><code>POST /vuln/password-reset/verify</code></article>
+      <article><h2>A07 · Authentication</h2><p>Brute-forceable authentication endpoint.</p><code>POST /vuln/auth-check</code></article>
+      <article><h2>A08 · Integrity</h2><p>Mass assignment and unsafe upload validation.</p><code>/vuln/profile · /vuln/upload</code></article>
+      <article><h2>A09 · Logging</h2><p>Security event with no audit or alert signal.</p><code>POST /vuln/audit-event</code></article>
+      <article><h2>A10 · Exceptions</h2><p>Internal error details leaked to clients.</p><code>GET /vuln/calculate</code></article>
     </section>
-    <section class="protected"><h2>Protected twins</h2><p>Each exercise also has a <code>/protected/...</code> endpoint, allowing the Blue Team assessment to compare vulnerable vs mitigated behavior.</p></section>
+    <section class="protected"><h2>How to use the lab</h2><p>Start in <b>Swagger</b>, run the <code>/vuln/...</code> request, then try the matching <code>/protected/...</code> endpoint. The Red Team console automates the same bounded checks, and the Blue Team dashboard records detection and mitigation results.</p></section>
   </main>
 </body>
 </html>
