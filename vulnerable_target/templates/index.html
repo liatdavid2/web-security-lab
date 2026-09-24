@@ -3,33 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Vulnerable Training Target</title>
+  <title>Web Security Lab</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <main>
-    <div class="badge">LOCAL TRAINING TARGET · OWASP TOP 10:2025</div>
-    <h1>Vulnerable Web App</h1>
-    <p class="lead">A deliberately insecure service with paired vulnerable/protected endpoints. Use Swagger to read the explanation, send a request, and compare the mitigation.</p>
-    <div class="actions">
-      <a class="primary" href="/docs">Open Swagger UI</a>
-      <a href="http://localhost:8201">Red Team</a>
-      <a href="http://localhost:8202">Blue Team</a>
-    </div>
-    <div class="warning">⚠️ Local lab only. Port 8203 must not be exposed to the public Internet.</div>
-    <section class="grid">
-      <article><h2>A01 · Access Control</h2><p>IDOR, simulated path traversal and training-safe SSRF.</p><code>/vuln/notes · /vuln/files · /vuln/fetch-url</code></article>
-      <article><h2>A02 · Misconfiguration</h2><p>Debug/config information disclosure.</p><code>GET /vuln/debug-config</code></article>
-      <article><h2>A03 · Supply Chain</h2><p>Unpinned dependencies and missing integrity metadata.</p><code>GET /vuln/dependencies</code></article>
-      <article><h2>A04 · Cryptography</h2><p>Cleartext credential exposure.</p><code>GET /vuln/credentials/{username}</code></article>
-      <article><h2>A05 · Injection</h2><p>Reflected XSS and SQL injection.</p><code>/vuln/search · /vuln/login</code></article>
-      <article><h2>A06 · Insecure Design</h2><p>Predictable password-reset token.</p><code>POST /vuln/password-reset/verify</code></article>
-      <article><h2>A07 · Authentication</h2><p>Brute-forceable authentication endpoint.</p><code>POST /vuln/auth-check</code></article>
-      <article><h2>A08 · Integrity</h2><p>Mass assignment and unsafe upload validation.</p><code>/vuln/profile · /vuln/upload</code></article>
-      <article><h2>A09 · Logging</h2><p>Security event with no audit or alert signal.</p><code>POST /vuln/audit-event</code></article>
-      <article><h2>A10 · Exceptions</h2><p>Internal error details leaked to clients.</p><code>GET /vuln/calculate</code></article>
+    <div class="badge">LOCAL TRAINING LAB · OWASP TOP 10:2025</div>
+    <h1>Learn web security by seeing before and after.</h1>
+    <p class="lead">This lab contains an intentionally vulnerable app and a protected version of the same features. Start with the guided demo if you are new to web security.</p>
+
+    <section class="start-grid">
+      <a class="start-card recommended" href="http://localhost:8201">
+        <span class="step">1</span><div><small>RECOMMENDED START</small><h2>Learn & Test</h2><p>Choose a vulnerability and run a simple Red Team → Blue Team demo.</p><b>Open guided lab →</b></div>
+      </a>
+      <a class="start-card" href="http://localhost:8202">
+        <span class="step blue">2</span><div><small>SEE THE OUTCOME</small><h2>Defense Results</h2><p>See which attacks were detected and whether the protection stopped them.</p><b>Open results →</b></div>
+      </a>
+      <a class="start-card" href="/docs">
+        <span class="step dark">3</span><div><small>FOR TECHNICAL USERS</small><h2>Swagger API</h2><p>Inspect every vulnerable and protected endpoint and send requests manually.</p><b>Open Swagger →</b></div>
+      </a>
     </section>
-    <section class="protected"><h2>How to use the lab</h2><p>Start in <b>Swagger</b>, run the <code>/vuln/...</code> request, then try the matching <code>/protected/...</code> endpoint. The Red Team console automates the same bounded checks, and the Blue Team dashboard records detection and mitigation results.</p></section>
+
+    <div class="warning"><b>Safe training environment:</b> keep port 8203 local. Several risky behaviors are simulated and bounded for learning.</div>
+
+    <section class="glossary">
+      <h2>Three terms to know</h2>
+      <div class="gloss-grid">
+        <article><b>Vulnerability</b><p>A weakness in the application that can be abused.</p></article>
+        <article><b>Red Team</b><p>Tests whether the weakness can actually be reproduced.</p></article>
+        <article><b>Blue Team</b><p>Detects the attempt and verifies that the defense works.</p></article>
+      </div>
+    </section>
+
+    <details class="catalog">
+      <summary>Show the vulnerability catalog</summary>
+      <div class="grid">
+        <article><h3>A01 · Access Control</h3><p>IDOR, path traversal and training-safe SSRF.</p></article>
+        <article><h3>A02 · Misconfiguration</h3><p>Debug and configuration information disclosure.</p></article>
+        <article><h3>A03 · Supply Chain</h3><p>Unpinned dependencies and missing integrity metadata.</p></article>
+        <article><h3>A04 · Cryptography</h3><p>Cleartext credential exposure.</p></article>
+        <article><h3>A05 · Injection</h3><p>Reflected XSS and SQL injection.</p></article>
+        <article><h3>A06 · Insecure Design</h3><p>Predictable password-reset token.</p></article>
+        <article><h3>A07 · Authentication</h3><p>Brute-forceable authentication.</p></article>
+        <article><h3>A08 · Integrity</h3><p>Mass assignment and unsafe upload validation.</p></article>
+        <article><h3>A09 · Logging</h3><p>Security event without an audit or alert signal.</p></article>
+        <article><h3>A10 · Exceptions</h3><p>Internal error details leaked to clients.</p></article>
+      </div>
+    </details>
   </main>
 </body>
 </html>

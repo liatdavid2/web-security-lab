@@ -3,106 +3,197 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Red Team | web-security-lab</title>
+  <title>Web Security Lab | Learn by Demo</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="shell">
-  <aside>
-    <div class="brand">web-security-lab</div>
-    <div class="team-mark red">RED TEAM</div>
-    <p>Offensive validation</p>
-    <nav>
-      <a class="active" href="/">Attack Console</a>
-      <a href="/docs">Red Swagger</a>
-      <a href="http://localhost:8203/docs">Target Swagger</a>
-      <a href="http://localhost:8202">Blue Team Dashboard</a>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="/">Web Security Lab</a>
+    <nav class="topnav">
+      <a class="active" href="/">Learn & Test</a>
+      <a href="http://localhost:8202">Defense Results</a>
+      <a href="http://localhost:8203/docs">Swagger</a>
     </nav>
-    <div class="safe-note">Local controlled lab<br>Fixed, bounded scenarios only</div>
-  </aside>
+    <div class="local-badge">LOCAL LAB</div>
+  </header>
 
   <main>
-    <header>
+    <section class="hero">
       <div>
-        <div class="eyebrow">OFFENSIVE SECURITY · OWASP TOP 10:2025</div>
-        <h1>Attack Console</h1>
-        <p>Run controlled scenarios, see why each weakness matters, then re-test the protected twin.</p>
+        <div class="eyebrow">BEGINNER-FRIENDLY SECURITY DEMO</div>
+        <h1>See a web vulnerability, then see the fix.</h1>
+        <p>You do not need security experience. Pick a vulnerability and the lab will test the unsafe version first, then the protected version.</p>
       </div>
-      <button id="runAll" class="primary">Run all attacks</button>
-    </header>
-
-    <section class="summary">
-      <div class="metric"><span>Scenarios</span><strong>{{ scenarios|length }}</strong></div>
-      <div class="metric"><span>Target</span><strong>Local Lab</strong></div>
-      <div class="metric"><span>Framework</span><strong>OWASP 2025</strong></div>
+      <button id="runAll" class="primary big">Run all demos</button>
     </section>
 
-    <section>
-      <div class="section-title">
-        <div><h2>Attack scenarios</h2><p>Every card has a vulnerable endpoint and a protected twin.</p></div>
-      </div>
+    <section class="how-it-works" aria-label="How the lab works">
+      <article>
+        <span class="step">1</span>
+        <div><b>Choose a vulnerability</b><p>Start with any card below.</p></div>
+      </article>
+      <div class="arrow">→</div>
+      <article>
+        <span class="step red-step">2</span>
+        <div><b>Red Team tests it</b><p>Can the unsafe app be exploited?</p></div>
+      </article>
+      <div class="arrow">→</div>
+      <article>
+        <span class="step blue-step">3</span>
+        <div><b>Blue Team verifies the defense</b><p>Does the protected app stop it?</p></div>
+      </article>
+    </section>
 
-      <div class="scenario-grid">
-        {% for key, s in scenarios.items() %}
-        <article class="scenario-card" data-key="{{ key }}">
-          <div class="card-top">
-            <span class="severity {{ s.severity|lower }}">{{ s.severity }}</span>
-            <span class="owasp">{{ s.owasp }}</span>
-            <span class="method">{{ s.method }}</span>
+    <section class="roles">
+      <div class="role red-role"><b>Red Team</b><span>tries to reproduce the weakness</span></div>
+      <div class="role blue-role"><b>Blue Team</b><span>detects the attempt and checks the protection</span></div>
+    </section>
+
+    <section class="section-head">
+      <div><h2>Common web vulnerabilities</h2><p>Each demo is local, bounded, and designed for learning.</p></div>
+      <div class="count">{{ scenarios|length }} demos</div>
+    </section>
+
+    <section class="scenario-list">
+      {% for key, s in scenarios.items() %}
+      <article class="scenario" data-key="{{ key }}">
+        <div class="scenario-main">
+          <div class="title-row">
+            <div class="number">{{ loop.index }}</div>
+            <div class="title-copy">
+              <div class="tags"><span class="severity {{ s.severity|lower }}">{{ s.severity }}</span><span class="owasp">{{ s.owasp }}</span></div>
+              <h3>{{ s.name }}</h3>
+            </div>
+            <button class="demo-btn" onclick="runDemo('{{ key }}', this)">Run this demo</button>
           </div>
-          <h3>{{ s.name }}</h3>
-          <p>{{ s.description }}</p>
-          <details>
-            <summary>Why it happens & how to fix it</summary>
-            <div class="explain"><b>Why:</b> {{ s.why }}</div>
-            <div class="explain"><b>Defense:</b> {{ s.remediation }}</div>
+
+          <div class="plain-grid">
+            <div class="plain-box">
+              <span class="plain-label">What can go wrong?</span>
+              <p>{{ s.description }}</p>
+            </div>
+            <div class="plain-box defense-box">
+              <span class="plain-label">How is it fixed?</span>
+              <p>{{ s.remediation }}</p>
+            </div>
+          </div>
+
+          <div class="comparison" id="comparison-{{ key }}">
+            <div class="outcome pending" id="red-{{ key }}">
+              <div class="outcome-head"><span class="team-dot red-dot"></span><b>Red Team</b><small>Vulnerable app</small></div>
+              <strong>Not tested yet</strong>
+              <p>Run the demo to test whether the weakness can be reproduced.</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="outcome pending" id="blue-{{ key }}">
+              <div class="outcome-head"><span class="team-dot blue-dot"></span><b>Blue Team</b><small>Protected app</small></div>
+              <strong>Not tested yet</strong>
+              <p>The same test will be repeated against the protected version.</p>
+            </div>
+          </div>
+
+          <details class="advanced">
+            <summary>Technical details</summary>
+            <div class="technical-grid">
+              <div><span>Why it happens</span><p>{{ s.why }}</p></div>
+              <div><span>Expected control</span><p>{{ s.expected_control }}</p></div>
+              <div><span>Test request</span><p><code>{{ s.method }} {{ s.endpoint }}</code></p></div>
+              <div><span>Demo input</span><p><code>{{ s.probe }}</code></p></div>
+            </div>
           </details>
-          <div class="meta">
-            <span>Endpoint</span><code>{{ s.endpoint }}</code>
-            <span>Expected defense</span><b>{{ s.expected_control }}</b>
-          </div>
-          <div class="buttons">
-            <button class="attack" onclick="runScenario('{{ key }}','vulnerable',this)">Attack vulnerable</button>
-            <button class="retest" onclick="runScenario('{{ key }}','protected',this)">Re-test protected</button>
-          </div>
-          <div class="result" id="result-{{ key }}">Not run yet</div>
-        </article>
-        {% endfor %}
-      </div>
+        </div>
+      </article>
+      {% endfor %}
     </section>
   </main>
 </div>
 
+<div id="progressToast" class="toast" hidden>Running demo...</div>
+
 <script>
-async function runScenario(scenario, mode, btn) {
+function setOutcome(el, state, title, text, meta='') {
+  el.className = 'outcome ' + state;
+  el.querySelector('strong').textContent = title;
+  el.querySelector('p').textContent = text;
+  let existing = el.querySelector('.outcome-meta');
+  if (existing) existing.remove();
+  if (meta) {
+    const m = document.createElement('div');
+    m.className = 'outcome-meta';
+    m.textContent = meta;
+    el.appendChild(m);
+  }
+}
+
+async function runOne(scenario, mode) {
+  const r = await fetch('/run', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario, mode})
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+  return data;
+}
+
+async function runDemo(scenario, btn) {
+  const redBox = document.getElementById('red-' + scenario);
+  const blueBox = document.getElementById('blue-' + scenario);
   const old = btn.textContent;
-  btn.disabled = true; btn.textContent = 'Running...';
-  const box = document.getElementById('result-' + scenario);
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  setOutcome(redBox, 'running', 'Testing vulnerable app...', 'Red Team is trying the safe training attack.');
+  setOutcome(blueBox, 'pending', 'Waiting for Red Team', 'The protected version will be tested next.');
   try {
-    const r = await fetch('/run', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scenario, mode})
-    });
-    const data = await r.json();
-    if(!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
-    const red = data.red_team, blue = data.blue_team;
-    box.className = 'result ' + (red.attack_success ? 'bad' : 'good');
-    box.innerHTML = `
-      <b>${red.attack_success ? 'Weakness reproduced' : 'Attack stopped'}</b>
-      <span>HTTP ${red.target_status} · Detected: ${blue.detected ? 'Yes' : 'No'} · Mitigation: ${blue.blocked ? 'Active' : 'Not active'}</span>
-    `;
+    const vuln = await runOne(scenario, 'vulnerable');
+    const vr = vuln.red_team;
+    setOutcome(
+      redBox,
+      vr.attack_success ? 'failed' : 'passed',
+      vr.attack_success ? 'Weakness reproduced' : 'Attack did not work',
+      vr.attack_success ? 'The vulnerable version allowed the training attack.' : 'The vulnerable version did not reproduce the expected weakness.',
+      'HTTP ' + vr.target_status + ' · Blue Team detected: ' + (vuln.blue_team.detected ? 'Yes' : 'No')
+    );
+
+    setOutcome(blueBox, 'running', 'Testing protected app...', 'Now the same idea is tested after the defense is applied.');
+    const prot = await runOne(scenario, 'protected');
+    const pr = prot.red_team;
+    setOutcome(
+      blueBox,
+      pr.attack_success ? 'failed' : 'passed',
+      pr.attack_success ? 'Protection failed' : 'Attack stopped',
+      pr.attack_success ? 'The protected version still allowed the training attack.' : 'The protection prevented the training attack as expected.',
+      'HTTP ' + pr.target_status + ' · Detected: ' + (prot.blue_team.detected ? 'Yes' : 'No') + ' · Mitigation active: ' + (prot.blue_team.blocked ? 'Yes' : 'No')
+    );
   } catch(e) {
-    box.className='result bad'; box.textContent='Run failed: ' + e;
-  } finally { btn.disabled=false; btn.textContent=old; }
+    setOutcome(redBox, 'failed', 'Demo could not run', String(e));
+    setOutcome(blueBox, 'pending', 'Not tested', 'Fix the lab connection and try again.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
 }
 
 document.getElementById('runAll').onclick = async function() {
-  const btn=this; btn.disabled=true; btn.textContent='Running...';
+  const btn = this;
+  const toast = document.getElementById('progressToast');
+  btn.disabled = true;
+  btn.textContent = 'Running all demos...';
+  toast.hidden = false;
+  let i = 0;
+  const cards = [...document.querySelectorAll('.scenario')];
   try {
-    for (const card of document.querySelectorAll('.scenario-card')) {
-      const attackBtn = card.querySelector('.attack');
-      await runScenario(card.dataset.key, 'vulnerable', attackBtn);
+    for (const card of cards) {
+      i++;
+      toast.textContent = `Running demo ${i} of ${cards.length}...`;
+      card.scrollIntoView({behavior:'smooth', block:'center'});
+      await runDemo(card.dataset.key, card.querySelector('.demo-btn'));
     }
-  } finally { btn.disabled=false; btn.textContent='Run all attacks'; }
+    toast.textContent = 'All demos complete. Open Defense Results for the summary.';
+    setTimeout(()=>toast.hidden=true, 3500);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run all demos';
+  }
 };
 </script>
 </body>

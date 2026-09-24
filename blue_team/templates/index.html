@@ -3,113 +3,137 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Blue Team | web-security-lab</title>
+  <title>Web Security Lab | Defense Results</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div class="shell">
-  <aside>
-    <div class="brand">web-security-lab</div>
-    <div class="team-mark">BLUE TEAM</div>
-    <p>Detection & response</p>
-    <nav>
-      <a class="active" href="/">SOC Dashboard</a>
-      <a href="/docs">Blue Swagger</a>
-      <a href="http://localhost:8203/docs">Target Swagger</a>
-      <a href="http://localhost:8201">Red Team Console</a>
+<div class="app">
+  <header class="topbar">
+    <a class="brand" href="http://localhost:8201">Web Security Lab</a>
+    <nav class="topnav">
+      <a href="http://localhost:8201">Learn & Test</a>
+      <a class="active" href="/">Defense Results</a>
+      <a href="http://localhost:8203/docs">Swagger</a>
     </nav>
-    <div class="legend">
-      <span><i class="dot red"></i> Weakness reproduced</span>
-      <span><i class="dot green"></i> Protected / mitigated</span>
-    </div>
-  </aside>
+    <div class="status"><span></span> Blue Team online</div>
+  </header>
 
   <main>
-    <header>
+    <section class="hero">
       <div>
-        <div class="eyebrow">DEFENSIVE SECURITY · OWASP TOP 10:2025</div>
-        <h1>SOC Dashboard</h1>
-        <p>Detection, mitigation and before/after security validation.</p>
+        <div class="eyebrow">BLUE TEAM · DEFENSE VIEW</div>
+        <h1>Did the defenses work?</h1>
+        <p>This page turns the Red Team tests into a simple before-and-after view. Green means the protection stopped the training attack.</p>
       </div>
-      <div class="actions">
-        <button id="run">Run full assessment</button>
-        <button class="secondary" id="reset">Reset</button>
-      </div>
-    </header>
-
-    <section class="health">
-      <div><span class="status-dot"></span><b>Blue Team online</b></div>
-      <span>{{ rules|length }} explainable controls loaded</span>
+      <div class="actions"><button id="run">Run full assessment</button><button class="secondary" id="reset">Clear results</button></div>
     </section>
 
-    <section class="metrics">
-      <div class="card"><span>Total events</span><strong id="total">0</strong></div>
-      <div class="card"><span>Detection rate</span><strong id="detect">0%</strong></div>
-      <div class="card"><span>Mitigation-active rate</span><strong id="block">0%</strong></div>
-      <div class="card"><span>Mean detection latency</span><strong id="latency">0 ms</strong></div>
+    <section class="explainer">
+      <div><span class="mini red-mini">1</span><p><b>Before defense</b><br>The vulnerable app is tested.</p></div>
+      <div class="arrow">→</div>
+      <div><span class="mini blue-mini">2</span><p><b>Blue Team observes</b><br>The attempt is detected and recorded.</p></div>
+      <div class="arrow">→</div>
+      <div><span class="mini green-mini">3</span><p><b>After defense</b><br>The protected app should stop the same attack.</p></div>
+    </section>
+
+    <section class="scoreboard">
+      <article class="score"><span>Tests recorded</span><strong id="total">0</strong><small>individual Red/Blue checks</small></article>
+      <article class="score"><span>Attacks detected</span><strong id="detect">0%</strong><small>Blue Team saw the attempt</small></article>
+      <article class="score"><span>Defenses active</span><strong id="block">0%</strong><small>protection was confirmed</small></article>
     </section>
 
     <section class="before-after">
       <article class="compare before">
-        <div class="label">BEFORE DEFENSE</div><h2 id="before">0%</h2><p>Weakness reproduction rate</p><div class="bar"><i id="beforeBar"></i></div>
+        <div class="compare-label">BEFORE DEFENSE</div>
+        <div class="compare-value" id="before">0%</div>
+        <h2>Attack success</h2>
+        <p>How often the training attack worked against the intentionally vulnerable version.</p>
+        <div class="bar"><i id="beforeBar"></i></div>
       </article>
-      <div class="shield">→</div>
+      <div class="big-arrow">→</div>
       <article class="compare after">
-        <div class="label">AFTER DEFENSE</div><h2 id="after">0%</h2><p>Weakness reproduction rate after mitigation</p><div class="bar"><i id="afterBar"></i></div>
+        <div class="compare-label">AFTER DEFENSE</div>
+        <div class="compare-value" id="after">0%</div>
+        <h2>Attack success</h2>
+        <p>How often the same attack still worked after the protection was applied. Lower is better.</p>
+        <div class="bar"><i id="afterBar"></i></div>
       </article>
     </section>
 
-    <section class="table-card">
-      <div class="table-head">
-        <div><h2>Security events</h2><p>Red Team evidence correlated with Blue Team controls.</p></div>
-        <span id="eventCount">0 events</span>
-      </div>
+    <section class="section-head">
+      <div><h2>Results by vulnerability</h2><p>One simple card per security scenario.</p></div>
+      <span id="scenarioCount">0 scenarios tested</span>
+    </section>
+    <section id="scenarioResults" class="scenario-results">
+      <div class="empty-state"><b>No results yet.</b><p>Click “Run full assessment” or run a demo from the Learn & Test page.</p></div>
+    </section>
+
+    <details class="advanced-log">
+      <summary>Advanced event log</summary>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Scenario</th><th>Mode</th><th>Attack</th><th>Detection</th><th>Mitigation</th><th>Rule</th><th>Control</th><th>Latency</th></tr></thead>
+          <thead><tr><th>Scenario</th><th>Version</th><th>Attack</th><th>Detected</th><th>Defense</th><th>Control</th><th>Latency</th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
-    </section>
-
-    <section class="controls-section">
-      <div class="table-head"><div><h2>Defense catalog</h2><p>What Blue Team looks for and which control should prevent it.</p></div></div>
-      <div class="control-grid">
-        {% for key, r in rules.items() %}
-        <article class="control-card">
-          <div><span class="owasp">{{ r.owasp }}</span><code>{{ r.rule }}</code></div>
-          <h3>{{ r.control }}</h3>
-          <p><b>Detect:</b> {{ r.detect }}</p>
-          <p><b>Fix:</b> {{ r.remediation }}</p>
-        </article>
-        {% endfor %}
-      </div>
-    </section>
+    </details>
   </main>
 </div>
 
 <script>
 const $=id=>document.getElementById(id);
-const badge=(ok,yes='Yes',no='No')=>`<span class="badge ${ok?'good':'bad'}">${ok?yes:no}</span>`;
+const badge=(ok,yes='Yes',no='No')=>`<span class="pill ${ok?'good':'bad'}">${ok?yes:no}</span>`;
+const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+function renderScenarioCards(events){
+  const grouped={};
+  for(const e of events){
+    grouped[e.scenario_name] ??= {name:e.scenario_name,owasp:e.owasp,vulnerable:null,protected:null,control:e.control};
+    grouped[e.scenario_name][e.mode]=e;
+    grouped[e.scenario_name].control=e.control || grouped[e.scenario_name].control;
+  }
+  const items=Object.values(grouped);
+  $('scenarioCount').textContent=items.length+' scenarios tested';
+  if(!items.length){
+    $('scenarioResults').innerHTML='<div class="empty-state"><b>No results yet.</b><p>Click “Run full assessment” or run a demo from the Learn & Test page.</p></div>';
+    return;
+  }
+  $('scenarioResults').innerHTML=items.map(g=>{
+    const v=g.vulnerable,p=g.protected;
+    const vulnWorked=v?!!v.attack_success:null;
+    const protectedWorked=p?!!p.attack_success:null;
+    const protectedPassed=p?!protectedWorked:null;
+    return `<article class="result-card">
+      <div class="result-title"><div><span>${esc(g.owasp)}</span><h3>${esc(g.name)}</h3></div>${protectedPassed===true?'<b class="overall pass">DEFENSE PASSED</b>':protectedPassed===false?'<b class="overall fail">DEFENSE FAILED</b>':'<b class="overall pending">INCOMPLETE</b>'}</div>
+      <div class="result-flow">
+        <div class="phase ${vulnWorked===true?'bad-phase':vulnWorked===false?'good-phase':''}"><small>RED TEAM · BEFORE</small><b>${v?vulnWorked?'Attack worked':'Attack stopped':'Not tested'}</b><p>${v?'Detected: '+(v.detected?'Yes':'No'):'Run the vulnerable test first.'}</p></div>
+        <div class="flow-arrow">→</div>
+        <div class="phase ${protectedPassed===true?'good-phase':protectedPassed===false?'bad-phase':''}"><small>BLUE TEAM · AFTER</small><b>${p?protectedPassed?'Attack stopped':'Attack still worked':'Not tested'}</b><p>${p?'Defense active: '+(p.blocked?'Yes':'No'):'Run the protected test next.'}</p></div>
+      </div>
+      <div class="control-line"><span>Protection used</span><b>${esc(g.control||'—')}</b></div>
+    </article>`;
+  }).join('');
+}
+
 async function refresh(){
   const s=await fetch('/api/summary').then(r=>r.json());
   $('total').textContent=s.total; $('detect').textContent=s.detection_rate+'%'; $('block').textContent=s.block_rate+'%';
-  $('latency').textContent=s.mean_detection_latency_ms+' ms'; $('before').textContent=s.vulnerable_success_rate+'%'; $('after').textContent=s.protected_success_rate+'%';
+  $('before').textContent=s.vulnerable_success_rate+'%'; $('after').textContent=s.protected_success_rate+'%';
   $('beforeBar').style.width=s.vulnerable_success_rate+'%'; $('afterBar').style.width=s.protected_success_rate+'%';
   const events=await fetch('/api/events').then(r=>r.json());
-  $('eventCount').textContent=events.length+' events';
-  $('rows').innerHTML=events.length ? events.map(e=>`
-    <tr>
-      <td><b>${e.scenario_name}</b><small>${e.owasp} · ${e.method} ${e.endpoint}</small></td>
-      <td><span class="mode ${e.mode}">${e.mode}</span></td>
-      <td>${badge(!!e.attack_success,'Succeeded','Stopped')}</td>
-      <td>${badge(!!e.detected,'Detected','Missed')}</td>
-      <td>${badge(!!e.blocked,'Active','Not active')}</td>
-      <td><code>${e.rule_id}</code></td><td>${e.control}</td><td>${e.detection_latency_ms} ms</td>
-    </tr>`).join('') : `<tr><td colspan="8" class="empty">No events yet. Run the assessment or use the Red Team console.</td></tr>`;
+  renderScenarioCards(events);
+  $('rows').innerHTML=events.length ? events.map(e=>`<tr>
+    <td><b>${esc(e.scenario_name)}</b><small>${esc(e.owasp)}</small></td>
+    <td><span class="mode ${esc(e.mode)}">${esc(e.mode)}</span></td>
+    <td>${badge(!!e.attack_success,'Worked','Stopped')}</td>
+    <td>${badge(!!e.detected,'Yes','No')}</td>
+    <td>${badge(!!e.blocked,'Active','Inactive')}</td>
+    <td>${esc(e.control)}</td><td>${esc(e.detection_latency_ms)} ms</td>
+  </tr>`).join('') : '<tr><td colspan="7" class="empty">No events yet.</td></tr>';
 }
+
 $('run').onclick=async function(){
-  this.disabled=true; this.textContent='Running...';
+  this.disabled=true; this.textContent='Running assessment...';
   try{const r=await fetch('/api/run-assessment',{method:'POST'});if(!r.ok){const d=await r.json();throw new Error(d.detail||r.status)}await refresh();}
   catch(e){alert('Assessment failed: '+e)}
   finally{this.disabled=false;this.textContent='Run full assessment';}
