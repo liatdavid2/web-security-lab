@@ -83,13 +83,17 @@
             <div class="outcome pending" id="red-{{ key }}">
               <div class="outcome-head"><span class="team-dot red-dot"></span><b>Red Team</b><small>Vulnerable app</small></div>
               <strong>Not tested yet</strong>
-              <p>Run the demo to test whether the weakness can be reproduced.</p>
+              <div class="outcome-body">
+                <p>Run the demo to see the weakness, the API call, the input, and the response.</p>
+              </div>
             </div>
             <div class="flow-arrow">→</div>
             <div class="outcome pending" id="blue-{{ key }}">
               <div class="outcome-head"><span class="team-dot blue-dot"></span><b>Blue Team</b><small>Protected app</small></div>
               <strong>Not tested yet</strong>
-              <p>The same test will be repeated against the protected version.</p>
+              <div class="outcome-body">
+                <p>Then you will see the correct fix, how it should work, and the protected response.</p>
+              </div>
             </div>
           </div>
 
@@ -112,18 +116,50 @@
 <div id="progressToast" class="toast" hidden>Running demo...</div>
 
 <script>
-function setOutcome(el, state, title, text, meta='') {
+const scenarioInfo = {{ scenarios|tojson|safe }};
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+}
+
+function prettyProtectedEndpoint(endpoint) {
+  return String(endpoint || '').replace('/vuln/', '/protected/');
+}
+
+function summarizeEvidence(scenario, evidence, status) {
+  const text = String(evidence || '').replace(/\s+/g, ' ').trim();
+  if (!text) return `HTTP ${status}`;
+  const short = text.length > 150 ? text.slice(0, 150) + '…' : text;
+  return `HTTP ${status} · ${short}`;
+}
+
+function buildRows(rows) {
+  return `<div class="detail-list">${rows.map(r => `
+    <div class="detail-row">
+      <span>${escapeHtml(r.label)}</span>
+      <div>${r.code ? `<code>${escapeHtml(r.value)}</code>` : escapeHtml(r.value)}</div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function renderOutcome(el, state, title, intro, rows = [], footer = '') {
   el.className = 'outcome ' + state;
-  el.querySelector('strong').textContent = title;
-  el.querySelector('p').textContent = text;
-  let existing = el.querySelector('.outcome-meta');
-  if (existing) existing.remove();
-  if (meta) {
-    const m = document.createElement('div');
-    m.className = 'outcome-meta';
-    m.textContent = meta;
-    el.appendChild(m);
-  }
+  el.innerHTML = `
+    <div class="outcome-head">${el.querySelector?.('.outcome-head') ? '' : ''}</div>
+  `;
+}
+
+function setOutcome(el, state, team, appLabel, title, intro, rows = [], footer = '') {
+  el.className = 'outcome ' + state;
+  el.innerHTML = `
+    <div class="outcome-head"><span class="team-dot ${team === 'red' ? 'red-dot' : 'blue-dot'}"></span><b>${team === 'red' ? 'Red Team' : 'Blue Team'}</b><small>${escapeHtml(appLabel)}</small></div>
+    <strong>${escapeHtml(title)}</strong>
+    <div class="outcome-body">
+      <p>${escapeHtml(intro)}</p>
+      ${buildRows(rows)}
+    </div>
+    ${footer ? `<div class="outcome-meta">${escapeHtml(footer)}</div>` : ''}
+  `;
 }
 
 async function runOne(scenario, mode) {
@@ -138,35 +174,75 @@ async function runOne(scenario, mode) {
 async function runDemo(scenario, btn) {
   const redBox = document.getElementById('red-' + scenario);
   const blueBox = document.getElementById('blue-' + scenario);
+  const s = scenarioInfo[scenario];
   const old = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Running...';
-  setOutcome(redBox, 'running', 'Testing vulnerable app...', 'Red Team is trying the safe training attack.');
-  setOutcome(blueBox, 'pending', 'Waiting for Red Team', 'The protected version will be tested next.');
+
+  setOutcome(
+    redBox,
+    'running',
+    'red',
+    'Vulnerable app',
+    'Testing vulnerable app...',
+    'Red Team is checking whether the weak version can be abused.',
+    [
+      {label:'API call', value:`${s.method} ${s.endpoint}`, code:true},
+      {label:'Input', value:s.probe}
+    ]
+  );
+  setOutcome(
+    blueBox,
+    'pending',
+    'blue',
+    'Protected app',
+    'Waiting for Red Team',
+    'The protected version will be tested right after the weak one.',
+    [
+      {label:'Expected fix', value:s.expected_control},
+      {label:'Protected API', value:`${s.method} ${prettyProtectedEndpoint(s.endpoint)}`, code:true}
+    ]
+  );
+
   try {
     const vuln = await runOne(scenario, 'vulnerable');
     const vr = vuln.red_team;
     setOutcome(
       redBox,
       vr.attack_success ? 'failed' : 'passed',
+      'red',
+      'Vulnerable app',
       vr.attack_success ? 'Weakness reproduced' : 'Attack did not work',
-      vr.attack_success ? 'The vulnerable version allowed the training attack.' : 'The vulnerable version did not reproduce the expected weakness.',
-      'HTTP ' + vr.target_status + ' · Blue Team detected: ' + (vuln.blue_team.detected ? 'Yes' : 'No')
+      s.description,
+      [
+        {label:'Weakness we exploited', value:s.why},
+        {label:'API call', value:`${s.method} ${s.endpoint}`, code:true},
+        {label:'Input', value:s.probe},
+        {label:'Output', value:summarizeEvidence(scenario, vuln.target_evidence, vr.target_status)}
+      ],
+      `Blue Team detected: ${vuln.blue_team.detected ? 'Yes' : 'No'}`
     );
 
-    setOutcome(blueBox, 'running', 'Testing protected app...', 'Now the same idea is tested after the defense is applied.');
     const prot = await runOne(scenario, 'protected');
     const pr = prot.red_team;
     setOutcome(
       blueBox,
       pr.attack_success ? 'failed' : 'passed',
+      'blue',
+      'Protected app',
       pr.attack_success ? 'Protection failed' : 'Attack stopped',
-      pr.attack_success ? 'The protected version still allowed the training attack.' : 'The protection prevented the training attack as expected.',
-      'HTTP ' + pr.target_status + ' · Detected: ' + (prot.blue_team.detected ? 'Yes' : 'No') + ' · Mitigation active: ' + (prot.blue_team.blocked ? 'Yes' : 'No')
+      'This card shows the recommended fix and how the secure version behaves.',
+      [
+        {label:'Correct fix', value:s.remediation},
+        {label:'How it should work', value:s.expected_control},
+        {label:'Protected API', value:`${s.method} ${prettyProtectedEndpoint(s.endpoint)}`, code:true},
+        {label:'Output', value:summarizeEvidence(scenario, prot.target_evidence, pr.target_status)}
+      ],
+      `Detected: ${prot.blue_team.detected ? 'Yes' : 'No'} · Mitigation active: ${prot.blue_team.blocked ? 'Yes' : 'No'}`
     );
   } catch(e) {
-    setOutcome(redBox, 'failed', 'Demo could not run', String(e));
-    setOutcome(blueBox, 'pending', 'Not tested', 'Fix the lab connection and try again.');
+    setOutcome(redBox, 'failed', 'red', 'Vulnerable app', 'Demo could not run', String(e));
+    setOutcome(blueBox, 'pending', 'blue', 'Protected app', 'Not tested', 'Fix the lab connection and try again.');
   } finally {
     btn.disabled = false;
     btn.textContent = old;
